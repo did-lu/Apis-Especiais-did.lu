@@ -9,6 +9,10 @@ app.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);
 });
 
+app.get("/health", function (req, res) {
+  res.send("OK");
+});
+
 app.get("/", async function (req, res) {
   var JSZip = require("jszip");
   var request = require("request");
