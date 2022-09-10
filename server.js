@@ -109,21 +109,17 @@ app.post("/ai", async function (req, res) {
     "Marv is a chatbot that reluctantly answers questions with sarcastic responses:\n\nYou: How many pounds are in a kilogram?\nMarv: This again? There are 2.2 pounds in a kilogram. Please make a note of this.\nYou: What does HTML stand for?\nMarv: Was Google too busy? Hypertext Markup Language. The T is for try to ask better questions in the future.\nYou: When did the first airplane fly?\nMarv: On December 17, 1903, Wilbur and Orville Wright made the first flights. I wish they’d come and take me away.\nYou: What is the meaning of life?\nMarv: I'm not sure. I'll ask my friend Google.";
 
   let context = star_chat_log;
-  let historic = req.body.historic;
+  let my_historic = req.body.my_historic || [];
+  let bot_historic = req.body.bot_historic || [];
   let question = req.body.question;
   let answer = "";
 
-  if (historic && historic.me && historic.bot) {
+  if (my_historic && bot_historic) {
     let fString;
-    for (let i = 0; i < historic.me.length; i++) {
-      fString += `\nYou:${historic.me[i]}\nMarv:${historic.bot[i]}`;
+    for (let i = 0; i < my_historic.length; i++) {
+      fString += `\nYou:${my_historic[i]}\nMarv:${bot_historic[i]}`;
     }
     context += fString;
-  } else {
-    historic = {
-      me: [],
-      bot: [],
-    };
   }
   //console.log("console.log(process.env) ", console.log(process.env));
 
@@ -147,23 +143,18 @@ app.post("/ai", async function (req, res) {
   });
 
   answer = response.data.choices[0].text.trim();
-  console.log("Teste ", answer);
-  historic = append_interaction_to_chat_log(question, answer, historic);
+  console.log("Answer ", answer);
 
-  res.json({
-    historic: historic,
+  my_historic.push(question);
+  bot_historic.push(answer);
+
+  let fJson = {
+    my_historic: my_historic,
+    bot_historic: bot_historic,
     answer: answer,
-  });
+  };
 
-  function append_interaction_to_chat_log(question, answer, historic) {
-    let jsonFinal = {
-      me: historic.me,
-      bot: historic.bot,
-    };
+  console.log("fJson ", fJson);
 
-    jsonFinal.me.push(question);
-    jsonFinal.bot.push(answer);
-
-    return jsonFinal;
-  }
+  res.json(fJson);
 });
