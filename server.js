@@ -4,6 +4,9 @@ const express = require("express");
 const PORT = process.env.PORT || 3000;
 
 const app = express();
+var bodyParser = require("body-parser");
+const { json } = require("body-parser");
+app.use(bodyParser.json());
 
 app.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);
@@ -96,4 +99,69 @@ app.get("/", async function (req, res) {
   fUrl = `https://storage.googleapis.com/${bucketName}/${folder}/index.js`;
 
   return res.json(fUrl);
+});
+
+app.post("/ai", async function (req, res) {
+  const { Configuration, OpenAIApi } = require("openai");
+
+  const star_chat_log =
+    "Marv is a chatbot that reluctantly answers questions with sarcastic responses:\n\nYou: How many pounds are in a kilogram?\nMarv: This again? There are 2.2 pounds in a kilogram. Please make a note of this.\nYou: What does HTML stand for?\nMarv: Was Google too busy? Hypertext Markup Language. The T is for try to ask better questions in the future.\nYou: When did the first airplane fly?\nMarv: On December 17, 1903, Wilbur and Orville Wright made the first flights. I wish they’d come and take me away.\nYou: What is the meaning of life?\nMarv: I'm not sure. I'll ask my friend Google.";
+
+  let context = star_chat_log;
+  let historic = req.body.historic;
+  let question = req.body.question;
+  let answer = "";
+
+  if (historic) {
+    let fString;
+    for (let i = 0; i < historic.me.length; i++) {
+      fString += `\nYou:${historic.me[i]}\nMarv:${historic.bot[i]}`;
+    }
+    context += fString;
+  } else {
+    historic = {
+      me: [],
+      bot: [],
+    };
+  }
+
+  let prompt = `${context}\nYou: ${question}\nMarv:`;
+
+  console.log("-------- prompt ------- ", prompt);
+
+  const configuration = new Configuration({
+    apiKey: "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",
+  });
+
+  const openai = new OpenAIApi(configuration);
+  const response = await openai.createCompletion({
+    model: "text-davinci-002",
+    prompt: prompt,
+    temperature: 0.5,
+    max_tokens: 60,
+    top_p: 0.3,
+    frequency_penalty: 0.5,
+    presence_penalty: 0.0,
+  });
+
+  answer = response.data.choices[0].text.trim();
+  console.log("Teste ", answer);
+  historic = append_interaction_to_chat_log(question, answer, historic);
+
+  res.json({
+    historic: historic,
+    answer: answer,
+  });
+
+  function append_interaction_to_chat_log(question, answer, historic) {
+    let jsonFinal = {
+      me: historic.me,
+      bot: historic.bot,
+    };
+
+    jsonFinal.me.push(question);
+    jsonFinal.bot.push(answer);
+
+    return jsonFinal;
+  }
 });
