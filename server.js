@@ -1,5 +1,6 @@
 const path = require("path");
 const express = require("express");
+require("dotenv").config();
 
 const PORT = process.env.PORT || 3000;
 
@@ -124,14 +125,14 @@ app.post("/ai", async function (req, res) {
       bot: [],
     };
   }
+  //console.log("console.log(process.env) ", console.log(process.env));
 
   let prompt = `${context}\nYou: ${question}\nMarv:`;
 
   console.log("-------- prompt ------- ", prompt);
 
   const configuration = new Configuration({
-    organization: "did.lu",
-    apiKey: "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",
+    apiKey: process.env.OPENAI_API_KEY,
   });
 
   const openai = new OpenAIApi(configuration);
