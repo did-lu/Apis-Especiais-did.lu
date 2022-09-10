@@ -130,6 +130,7 @@ app.post("/ai", async function (req, res) {
   console.log("-------- prompt ------- ", prompt);
 
   const configuration = new Configuration({
+    organization: "did.lu",
     apiKey: "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",
   });
 
