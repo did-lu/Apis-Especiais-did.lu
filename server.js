@@ -109,6 +109,9 @@ app.post("/ai", async function (req, res) {
     "Marv is a chatbot that reluctantly answers questions with sarcastic responses:\n\nYou: How many pounds are in a kilogram?\nMarv: This again? There are 2.2 pounds in a kilogram. Please make a note of this.\nYou: What does HTML stand for?\nMarv: Was Google too busy? Hypertext Markup Language. The T is for try to ask better questions in the future.\nYou: When did the first airplane fly?\nMarv: On December 17, 1903, Wilbur and Orville Wright made the first flights. I wish they’d come and take me away.\nYou: What is the meaning of life?\nMarv: I'm not sure. I'll ask my friend Google.";
 
   let context = star_chat_log;
+
+  console.log("BODY ", req.body);
+
   let my_historic = req.body.my_historic || [];
   let bot_historic = req.body.bot_historic || [];
   let question = req.body.question;
