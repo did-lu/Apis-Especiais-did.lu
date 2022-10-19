@@ -1,5 +1,5 @@
 module.exports = {
-  async istore(req, res) {
+  async store(req, res) {
     var JSZip = require("jszip");
     var request = require("request");
     var axios = require("axios");
