@@ -14,6 +14,8 @@ routes.post("/ai/marvin", OpenAiController.marvin);
 routes.post("/ai/onceUponAi", OpenAiController.onceUponAi);
 routes.post("/ai/keywords", OpenAiController.keywords);
 routes.post("/atena/game", Atena.game);
+routes.get("/atena/player", Atena.getPlayer);
+routes.get("/atena/team", Atena.getTeam);
 //routes.post("/ai/dalle", OpenAiController.dalle);
 
 module.exports = routes;
