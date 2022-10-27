@@ -1,6 +1,6 @@
 module.exports = {
   Goleiro: {
-    name: "gol",
+    name: "Goleiro",
     fis: 50,
     dri: 20,
     fin: 20,
@@ -8,7 +8,7 @@ module.exports = {
     pas: 30,
   },
   Zagueiro: {
-    name: "zag",
+    name: "Zagueiro",
     fis: 60,
     dri: 30,
     fin: 30,
@@ -16,7 +16,7 @@ module.exports = {
     pas: 40,
   },
   Lateral: {
-    name: "lat",
+    name: "Lateral",
     fis: 70,
     dri: 30,
     fin: 30,
@@ -24,7 +24,7 @@ module.exports = {
     pas: 50,
   },
   Meio: {
-    name: "meio",
+    name: "Meio",
     fis: 70,
     dri: 40,
     fin: 40,
@@ -32,7 +32,7 @@ module.exports = {
     pas: 60,
   },
   Volante: {
-    name: "vol",
+    name: "Volante",
     fis: 60,
     dri: 60,
     fin: 70,
@@ -40,7 +40,7 @@ module.exports = {
     pas: 70,
   },
   Atacante: {
-    name: "ata",
+    name: "Atacante",
     fis: 50,
     dri: 70,
     fin: 80,
