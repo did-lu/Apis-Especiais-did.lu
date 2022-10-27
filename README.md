@@ -36,9 +36,9 @@ Inicie o servidor
 
 # Serviços
 
-- [Open Ia](##openia)
-- [Once Upon Ai](##once-upon-ai)
-- [Atena](##atena)
+- [Open Ia](#openia)
+- [Once Upon Ai](#once-upon-ai)
+- [Atena](#atena)
 
 ## Documentação da API
 
