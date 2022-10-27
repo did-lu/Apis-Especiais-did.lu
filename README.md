@@ -38,6 +38,7 @@ Inicie o servidor
 
 - [Open Ia](##openia)
 - [Once Upon Ai](##once-upon-ai)
+- [Atena](##atena)
 
 ## Documentação da API
 
@@ -87,8 +88,9 @@ _\*O historico de mensgens pode ser util para manter o bot com um contexto de co
 }
 ```
 
-- ## Once Upon Ai [Gerador de Historia](https://beta.openai.com/examples/default-micro-horror)
-  cria uma introdução para uma historia
+## Once Upon Ai [Gerador de Historia](https://beta.openai.com/examples/default-micro-horror)
+
+cria uma introdução para uma historia
 
 ```http
   POST /ai/onceUponAi
@@ -127,6 +129,90 @@ _\*O historico de mensgens pode ser util para manter o bot com um contexto de co
 ```
 {
 	answer: string
+}
+```
+
+## Atena
+
+responsavel pela parte de esportes da did.lu
+
+- ### Cria um jogador aleatorio
+
+```http
+  GET /atena/player
+```
+
+#### Resposta
+
+```
+{
+	name: "Zoey Elisete", //nome aleatorio
+	state: 1, //(1,5) define o estado atual do jogador
+	number: 10, //numero do jogador
+	position: "meio", //posição que ele joga
+	status: {
+		"fis": 99, //(1,99) fisico
+		"dri": 99, //(1,99) drible
+		"fin": 99, //(1,99) finalização
+		"def": 99, //(1,99) defesa
+		"pas": 99 //(1,99) passe
+	}
+}
+```
+
+- ### Cria um time completo
+
+```http
+  GET /atena/team
+```
+
+#### Resposta
+
+```
+[
+  {
+    player:player
+  }
+]
+```
+
+- ### Processa um jogo
+
+```http
+  POST /atena/game
+```
+
+| Body           | Tipo       | Descrição                                    |
+| :------------- | :--------- | :------------------------------------------- |
+| `home`         | `json`     | **Obrigatório**. time da casa                |
+| `home.name`    | `string`   | **Obrigatório**. nome do time da casa        |
+| `home.team`    | `[player]` | **Obrigatório**. lista de players de um time |
+| `visitor`      | `json`     | **Obrigatório**. time visitante              |
+| `visitor.name` | `string`   | **Obrigatório**. nome do time visitante      |
+| `visitor.team` | `[player]` | **Obrigatório**. lista de players de um time |
+
+#### Resposta
+
+```
+{
+	"game": [
+		{
+			"event": "Isabelly Rubi prefere o recuo com Maksim Youssef",//Descrição de um lançe
+			"time": 1, //tempo de jogo
+			"team": "malvado", //time
+			"half": 1, //primeiro tempo do jogo
+			"score": { //score do jogo no momento atual
+				"home": {
+					"name": "malvado", //nome do time
+					"score": 0 //gols
+				},
+				"visitor": {
+					"name": "pingadão", //nome do time
+					"score": 0 //gols
+				}
+			}
+		}
+  ]
 }
 ```
 
