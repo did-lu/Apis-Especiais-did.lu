@@ -52,12 +52,16 @@ module.exports = {
           event: "Fim do primeiro tempo",
           time: totalTime,
           team: null,
+          half: 1,
+          score: totalScore,
         });
       } else {
         finalArray.push({
           event: "Apita o juiz, fim de jogo",
           time: totalTime,
           team: null,
+          score: totalScore,
+          half: 2,
           score: totalScore,
         });
       }
