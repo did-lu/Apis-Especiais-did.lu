@@ -124,12 +124,13 @@ module.exports = {
     res.json(fJson);
   },
 
-  /*async dalle() {
-    const { Dalle } = await import("dalle-node");
-    const dalle = new Dalle("sess-xxxxxxxxxxxxxxxxxxxxxxxxx"); // Bearer Token
-
-    const generations = await dalle.generate("a cat driving a car");
-
-    console.log(generations);
-  },*/
+  async dalle(req, res) {
+    const response = await openai.createImage({
+      prompt: req.body.prompt,
+      n: 1,
+      size: "1024x1024",
+    });
+    image_url = response.data.data[0].url;
+    res.json({ image: image_url });
+  },
 };
