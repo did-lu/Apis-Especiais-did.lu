@@ -6,16 +6,40 @@ let homeFiltered;
 let visitorFiltered;
 
 let totalScore;
+let gameStatus = [];
+
+let totalEvents = {};
 
 const MessageController = require("./MessageController");
 const CombateController = require("./CombateController");
-const Utils = require("./Utils");
+const Utils = require("../../Utils/Utils");
 
 module.exports = {
   async processGame(home, visitor) {
     Utils.setup();
+
     homeFiltered = filterTeam(home.team, home.name);
     visitorFiltered = filterTeam(visitor.team, visitor.name);
+
+    gameStatus.push(
+      {
+        name: home.name,
+        attemptsToGoal: [],
+        passes: [],
+        cards: [],
+        fouls: [],
+      },
+      {
+        name: visitor.name,
+        attemptsToGoal: [],
+        passes: [],
+        cards: [],
+        fouls: [],
+      }
+    );
+
+    totalEvents[home.name] = 0;
+    totalEvents[visitor.name] = 0;
 
     currentPlayer = getRandomPlayer(homeFiltered, "Ataque");
     currentTeam = homeFiltered;
@@ -34,12 +58,15 @@ module.exports = {
     let finalArray = [];
 
     for (let t = 1; t < 3; t++) {
-      let totalTime = Utils.generateRandom(45, 48);
+      let totalTime = Utils.generateRandom(45, 50);
+      //let totalTime = Utils.generateRandom(2, 5);
+
       for (let i = 1; i < totalTime; i++) {
         let nextMove = await defineNextMove(i);
         if (nextMove) {
           nextMove.half = t;
           nextMove.score = totalScore;
+          nextMove.gameStatus = gameStatus;
           let auxString = JSON.stringify(nextMove);
           finalArray.push(JSON.parse(auxString));
         }
@@ -47,23 +74,28 @@ module.exports = {
           i--;
         }
       }
+
+      let totalEventsSum = totalEvents[home.name] + totalEvents[visitor.name];
+      let possesion = {};
+      possesion[home.name] = `${Math.round((totalEvents[home.name] / totalEventsSum) * 100)}%`;
+      possesion[visitor.name] = `${Math.round(
+        (totalEvents[visitor.name] / totalEventsSum) * 100
+      )}%`;
+
+      gameStatus.push(possesion);
+
+      console.log("gameStatus: ", gameStatus);
+
       if (t == 1) {
-        finalArray.push({
-          event: "Fim do primeiro tempo",
-          time: totalTime,
-          team: null,
-          half: 1,
-          score: totalScore,
-        });
+        let fHalf = await MessageController.generateMessage("fHalf", null, null, null, totalTime);
+        fHalf.half = 1;
+        fHalf.score = totalScore;
+        finalArray.push(fHalf);
       } else {
-        finalArray.push({
-          event: "Apita o juiz, fim de jogo",
-          time: totalTime,
-          team: null,
-          score: totalScore,
-          half: 2,
-          score: totalScore,
-        });
+        let sHalf = await MessageController.generateMessage("sHalf", null, null, null, totalTime);
+        sHalf.half = 1;
+        sHalf.score = totalScore;
+        finalArray.push(sHalf);
       }
     }
 
@@ -77,7 +109,7 @@ function filterTeam(team, name) {
     Defesa: team.filter((n) => n.position == "Zagueiro" || n.position == "Lateral"),
     Meio: team.filter((n) => n.position == "Meio" || n.position == "Volante"),
     Ataque: team.filter((n) => n.position == "Atacante"),
-    Name: name,
+    name: name,
   };
 
   fTeam.Goleiro.forEach((element) => {
@@ -98,6 +130,7 @@ function filterTeam(team, name) {
 
 function getRandomPlayer(team, position) {
   let filteredTeam = team[position].filter((element) => element != currentPlayer);
+
   if (filteredTeam.length > 0) {
     return filteredTeam.random();
   } else {
@@ -108,20 +141,27 @@ function getRandomPlayer(team, position) {
 async function defineNextMove(time) {
   let lucky = 10 * defineLucky();
   let actionRandom = Utils.generateRandom(0, 100);
-  if (actionRandom < 25 + lucky) {
+
+  totalEvents[currentTeam.name]++;
+
+  if (actionRandom < 20 + lucky) {
+    //Ação solta
     return;
-  } else if (actionRandom < 50 + lucky) {
+  } else if (actionRandom < 40 + lucky) {
+    //Tentando o passe na mesma linha
     let passData = tryPass(true);
     return MessageController.generateMessage(
       "pass",
       passData.oldPlayer,
       passData.currentPlayer,
-      currentTeam.Name,
+      currentTeam.name,
       time
     );
-  } else if (actionRandom < 70 + lucky) {
+  } else if (actionRandom < 65 + lucky) {
+    //Tentando o passe para proxima linha
     let passData = await tryPass(false);
     if (passData.gol == true) {
+      //Chute ao gol
       let goleiro = getRandomPlayer(getAnotherTeam(), "Goleiro");
       let result = await CombateController.createCombate(currentPlayer, goleiro);
       let msg = "";
@@ -130,7 +170,7 @@ async function defineNextMove(time) {
           "goal",
           passData.currentPlayer,
           passData.oldPlayer,
-          currentTeam.Name,
+          currentTeam.name,
           time
         );
         await newGoal();
@@ -139,29 +179,39 @@ async function defineNextMove(time) {
           "miss",
           passData.currentPlayer,
           goleiro.name,
-          currentTeam.Name,
+          currentTeam.name,
           time
         );
         lostBall();
       }
       return msg;
     } else {
+      //Só passa
       return await MessageController.generateMessage(
         "pass",
         passData.oldPlayer,
         passData.currentPlayer,
-        currentTeam.Name,
+        currentTeam.name,
         time
       );
     }
-  } else {
+  } else if (actionRandom < 90) {
     let passData = lostBall();
 
     return await MessageController.generateMessage(
       "lost",
       passData.oldPlayer,
       passData.currentPlayer,
-      currentTeam.Name,
+      currentTeam.name,
+      time
+    );
+  } else {
+    let passData = fouled(time);
+    return await MessageController.generateMessage(
+      "fouled",
+      passData.oldPlayer,
+      passData.currentPlayer,
+      currentTeam.name,
       time
     );
   }
@@ -190,11 +240,53 @@ function lostBall() {
   ballPosition = getInvertedBallPosition();
   currentPlayer = getRandomPlayer(currentTeam, ballPosition);
 
-  return { oldPlayer: oldPlayer.name, currentPlayer: currentPlayer.name, gol: false };
+  return {
+    oldPlayer: oldPlayer.name,
+    currentPlayer: currentPlayer.name,
+    gol: false,
+    eventType: "lost ball",
+  };
+}
+
+function fouled(time) {
+  let auxTeam = getAnotherTeam();
+  let playerAux = getRandomPlayer(auxTeam, ballPosition);
+  let eventType = "fouled";
+  let randomAux = Utils.generateRandom(0, 100);
+
+  if (randomAux < 5) {
+    eventType = "expelled";
+    auxTeam.card = "red";
+    auxTeam = removePlayerFromTeam(auxTeam, playerAux);
+  } else if (randomAux < 30) {
+    eventType = "yellow_card";
+    auxTeam.card = "yellow";
+    if (currentPlayer.card && currentPlayer.card == "yellow") {
+      auxTeam.card = "red";
+      eventType = "expelled";
+      auxTeam = removePlayerFromTeam(auxTeam, playerAux);
+    }
+  }
+
+  if (auxTeam.card) {
+    gameStatus
+      .find((el) => el.name == auxTeam.name)
+      .fouls.push({
+        card: auxTeam.card,
+        time: time,
+      });
+  }
+
+  return {
+    oldPlayer: currentPlayer.name,
+    currentPlayer: playerAux.name,
+    gol: false,
+    eventType: "eventType",
+  };
 }
 
 async function newGoal() {
-  if (currentTeam.Name == homeFiltered.Name) {
+  if (currentTeam.name == homeFiltered.name) {
     totalScore.home.score++;
   } else {
     totalScore.visitor.score++;
@@ -229,7 +321,7 @@ function getNextPosition(currentPosition, nextPosition) {
 }
 
 function getAnotherTeam() {
-  if (currentTeam.Name == homeFiltered.Name) {
+  if (currentTeam.name == homeFiltered.name) {
     return visitorFiltered;
   } else {
     return homeFiltered;
@@ -240,6 +332,11 @@ function getInvertedBallPosition() {
   if (ballPosition == "Ataque") return "Defesa";
   if (ballPosition == "Defesa") return "Defesa";
   return ballPosition;
+}
+
+function removePlayerFromTeam(team, player) {
+  team[player.absolutPosition] = team[player.absolutPosition].filter((el) => el != player);
+  return team;
 }
 
 function defineLucky() {

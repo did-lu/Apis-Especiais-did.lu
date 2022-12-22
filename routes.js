@@ -2,7 +2,8 @@ const { Router } = require("express");
 
 const GCloudStorageController = require("./Controller/GCloudStorageController");
 const OpenAiController = require("./Controller/OpenAiController");
-const Atena = require("./Controller/Atena/Controller");
+const AtenaFutebol = require("./Controller/Atenas/Futebol/Controller");
+const AtenaCorrida = require("./Controller/Atenas/Corrida/Controller");
 
 const routes = Router();
 
@@ -14,8 +15,10 @@ routes.post("/ai/marvin", OpenAiController.marvin);
 routes.post("/ai/onceUponAi", OpenAiController.onceUponAi);
 routes.post("/ai/keywords", OpenAiController.keywords);
 routes.post("/ai/dalle", OpenAiController.dalle);
-routes.post("/atena/game", Atena.game);
-routes.get("/atena/player", Atena.getPlayer);
-routes.get("/atena/team", Atena.getTeam);
+routes.get("/atenas/futebol/player", AtenaFutebol.getPlayer);
+routes.post("/atenas/futebol/game", AtenaFutebol.game);
+routes.get("/atenas/futebol/team", AtenaFutebol.getTeam);
+routes.post("/atenas/corrida/game", AtenaCorrida.game);
+routes.get("/atenas/corrida/runner", AtenaCorrida.getRunner);
 
 module.exports = routes;

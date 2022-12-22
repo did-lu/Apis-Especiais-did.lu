@@ -1,4 +1,4 @@
-const Utils = require("./Utils");
+const Utils = require("../../Utils/Utils");
 
 module.exports = {
   async createCombate(atkP, defP) {
