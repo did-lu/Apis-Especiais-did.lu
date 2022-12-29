@@ -1,161 +1,146 @@
-let currentPlayer;
-let ballPosition;
-let currentTeam;
-
-let homeFiltered;
-let visitorFiltered;
-
-let totalScore;
-let gameStatus = [];
-
-let totalEvents = {};
-
 const MessageController = require("./MessageController");
 const CombateController = require("./CombateController");
 const Utils = require("../../Utils/Utils");
+const GameController = require("./GameController");
 
-module.exports = {};
+let totalEvents = {
+  casa: {},
+  visitante: {},
+};
 
-function filterTeam(team, name) {
-  let fTeam = {
-    Goleiro: team.filter((n) => n.position == "Goleiro"),
-    Defesa: team.filter((n) => n.position == "Zagueiro" || n.position == "Lateral"),
-    Meio: team.filter((n) => n.position == "Meio" || n.position == "Volante"),
-    Ataque: team.filter((n) => n.position == "Atacante"),
-    name: name,
-  };
+module.exports = {
+  async defineNextMove(time) {
+    let lucky = 10 * defineLucky();
+    gol;
+    let actionRandom = Utils.generateRandom(0, 100);
 
-  fTeam.Goleiro.forEach((element) => {
-    element.absolutPosition = "Goleiro";
-  });
-  fTeam.Defesa.forEach((element) => {
-    element.absolutPosition = "Defesa";
-  });
-  fTeam.Meio.forEach((element) => {
-    element.absolutPosition = "Meio";
-  });
-  fTeam.Ataque.forEach((element) => {
-    element.absolutPosition = "Ataque";
-  });
+    totalEvents[GameController.currentTeam.name]++;
 
-  return fTeam;
-}
+    if (actionRandom < 20 + lucky) {
+      //Ação solta
+      return;
+    } else if (actionRandom < 40 + lucky) {
+      //Tentando o passe na mesma linha
+      let passData = tryPass(true);
+      return MessageController.generateMessage(
+        "pass",
+        passData.oldPlayer,
+        passData.currentPlayer,
+        GameController.currentTeam.name,
+        time
+      );
+    } else if (actionRandom < 65 + lucky) {
+      //Tentando o passe para proxima linha
+      let passData = await tryPass(false);
+      if (passData.gol == true) {
+        //Chute ao gol
+        let goleiro = getRandomPlayer(getAnotherTeam(), "Goleiro");
+        let result = await CombateController.createCombate(GameController.currentPlayer, goleiro);
+        let msg = "";
+        if (result == true) {
+          msg = MessageController.generateMessage(
+            "goal",
+            passData.currentPlayer,
+            passData.oldPlayer,
+            GameController.currentTeam.name,
+            time
+          );
+          await newGoal();
+        } else {
+          msg = await MessageController.generateMessage(
+            "miss",
+            passData.currentPlayer,
+            goleiro.name,
+            GameController.currentTeam.name,
+            time
+          );
+          lostBall();
+        }
+        return msg;
+      } else {
+        //Só passa
+        return await MessageController.generateMessage(
+          "pass",
+          passData.oldPlayer,
+          passData.currentPlayer,
+          GameController.currentTeam.name,
+          time
+        );
+      }
+    } else if (actionRandom < 90) {
+      let passData = lostBall();
+
+      return await MessageController.generateMessage(
+        "lost",
+        passData.oldPlayer,
+        passData.currentPlayer,
+        GameController.currentTeam.name,
+        time
+      );
+    } else {
+      let passData = fouled(time);
+      return await MessageController.generateMessage(
+        "fouled",
+        passData.oldPlayer,
+        passData.currentPlayer,
+        GameController.currentTeam.name,
+        time
+      );
+    }
+  },
+
+  endGame() {
+    let totalEventsSum = totalEvents["casa"] + totalEvents["visitante"];
+    gameStatus.casa.possesion = `${Math.round((totalEvents["casa"] / totalEventsSum) * 100)}%`;
+    gameStatus.visitante.possesion = `${Math.round(
+      (totalEvents["visitante"] / totalEventsSum) * 100
+    )}%`;
+  },
+};
 
 function getRandomPlayer(team, position) {
-  let filteredTeam = team[position].filter((element) => element != currentPlayer);
+  let filteredTeam = team[position].filter((element) => element != GameController.currentPlayer);
 
   if (filteredTeam.length > 0) {
     return filteredTeam.random();
   } else {
-    return currentPlayer;
-  }
-}
-
-async function defineNextMove(time) {
-  let lucky = 10 * defineLucky();
-  let actionRandom = Utils.generateRandom(0, 100);
-
-  totalEvents[currentTeam.name]++;
-
-  if (actionRandom < 20 + lucky) {
-    //Ação solta
-    return;
-  } else if (actionRandom < 40 + lucky) {
-    //Tentando o passe na mesma linha
-    let passData = tryPass(true);
-    return MessageController.generateMessage(
-      "pass",
-      passData.oldPlayer,
-      passData.currentPlayer,
-      currentTeam.name,
-      time
-    );
-  } else if (actionRandom < 65 + lucky) {
-    //Tentando o passe para proxima linha
-    let passData = await tryPass(false);
-    if (passData.gol == true) {
-      //Chute ao gol
-      let goleiro = getRandomPlayer(getAnotherTeam(), "Goleiro");
-      let result = await CombateController.createCombate(currentPlayer, goleiro);
-      let msg = "";
-      if (result == true) {
-        msg = MessageController.generateMessage(
-          "goal",
-          passData.currentPlayer,
-          passData.oldPlayer,
-          currentTeam.name,
-          time
-        );
-        await newGoal();
-      } else {
-        msg = await MessageController.generateMessage(
-          "miss",
-          passData.currentPlayer,
-          goleiro.name,
-          currentTeam.name,
-          time
-        );
-        lostBall();
-      }
-      return msg;
-    } else {
-      //Só passa
-      return await MessageController.generateMessage(
-        "pass",
-        passData.oldPlayer,
-        passData.currentPlayer,
-        currentTeam.name,
-        time
-      );
-    }
-  } else if (actionRandom < 90) {
-    let passData = lostBall();
-
-    return await MessageController.generateMessage(
-      "lost",
-      passData.oldPlayer,
-      passData.currentPlayer,
-      currentTeam.name,
-      time
-    );
-  } else {
-    let passData = fouled(time);
-    return await MessageController.generateMessage(
-      "fouled",
-      passData.oldPlayer,
-      passData.currentPlayer,
-      currentTeam.name,
-      time
-    );
+    return GameController.currentPlayer;
   }
 }
 
 function tryPass(inSameLine) {
-  let oldPlayer = currentPlayer;
+  let oldPlayer = GameController.currentPlayer;
   if (inSameLine) {
-    let auxPlayer = getRandomPlayer(currentTeam, currentPlayer.absolutPosition);
-    if (auxPlayer) currentPlayer = auxPlayer;
+    let auxPlayer = getRandomPlayer(
+      GameController.currentTeam,
+      GameController.currentPlayer.absolutPosition
+    );
+    if (auxPlayer) GameController.currentPlayer = auxPlayer;
   } else {
     let next = getNextPosition(ballPosition, 1);
     if (next == "Gol") {
-      return { oldPlayer: null, currentPlayer: currentPlayer.name, gol: true };
+      return { oldPlayer: null, currentPlayer: GameController.currentPlayer.name, gol: true };
     }
 
     ballPosition = next;
-    currentPlayer = getRandomPlayer(currentTeam, next);
+    GameController.currentPlayer = getRandomPlayer(GameController.currentTeam, next);
   }
-  return { oldPlayer: oldPlayer.name, currentPlayer: currentPlayer.name, gol: false };
+  return {
+    oldPlayer: oldPlayer.name,
+    currentPlayer: GameController.currentPlayer.name,
+    gol: false,
+  };
 }
 
 function lostBall() {
-  currentTeam = getAnotherTeam();
-  let oldPlayer = currentPlayer;
+  GameController.currentTeam = getAnotherTeam();
+  let oldPlayer = GameController.currentPlayer;
   ballPosition = getInvertedBallPosition();
-  currentPlayer = getRandomPlayer(currentTeam, ballPosition);
+  GameController.currentPlayer = getRandomPlayer(GameController.currentTeam, ballPosition);
 
   return {
     oldPlayer: oldPlayer.name,
-    currentPlayer: currentPlayer.name,
+    currentPlayer: GameController.currentPlayer.name,
     gol: false,
     eventType: "lost ball",
   };
@@ -174,7 +159,7 @@ function fouled(time) {
   } else if (randomAux < 30) {
     eventType = "yellow_card";
     auxTeam.card = "yellow";
-    if (currentPlayer.card && currentPlayer.card == "yellow") {
+    if (GameController.currentPlayer.card && GameController.currentPlayer.card == "yellow") {
       auxTeam.card = "red";
       eventType = "expelled";
       auxTeam = removePlayerFromTeam(auxTeam, playerAux);
@@ -191,7 +176,7 @@ function fouled(time) {
   }
 
   return {
-    oldPlayer: currentPlayer.name,
+    oldPlayer: GameController.currentPlayer.name,
     currentPlayer: playerAux.name,
     gol: false,
     eventType: "eventType",
@@ -199,14 +184,14 @@ function fouled(time) {
 }
 
 async function newGoal() {
-  if (currentTeam.name == homeFiltered.name) {
+  if (GameController.currentTeam.name == homeFiltered.name) {
     totalScore.home.score++;
   } else {
     totalScore.visitor.score++;
   }
 
-  currentTeam = getAnotherTeam();
-  currentPlayer = getRandomPlayer(currentTeam, "Ataque");
+  GameController.currentTeam = getAnotherTeam();
+  GameController.currentPlayer = getRandomPlayer(GameController.currentTeam, "Ataque");
   ballPosition = "Meio";
 }
 
@@ -234,7 +219,7 @@ function getNextPosition(currentPosition, nextPosition) {
 }
 
 function getAnotherTeam() {
-  if (currentTeam.name == homeFiltered.name) {
+  if (GameController.currentTeam.name == homeFiltered.name) {
     return visitorFiltered;
   } else {
     return homeFiltered;
@@ -253,7 +238,7 @@ function removePlayerFromTeam(team, player) {
 }
 
 function defineLucky() {
-  if (currentPlayer.absolutPosition == ballPosition) {
+  if (GameController.currentPlayer.absolutPosition == ballPosition) {
     return 1.5;
   }
   return 1;

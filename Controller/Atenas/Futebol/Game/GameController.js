@@ -1,3 +1,8 @@
+const MessageController = require("./MessageController");
+const CombateController = require("./CombateController");
+const EventController = require("./EventController");
+const Utils = require("../../Utils/Utils");
+
 let currentPlayer;
 let ballPosition;
 let currentTeam;
@@ -6,37 +11,35 @@ let homeFiltered;
 let visitorFiltered;
 
 let totalScore;
-let gameStatus = [];
+let gameStatus = {};
 
 let totalEvents = {};
-
-const MessageController = require("./MessageController");
-const CombateController = require("./CombateController");
-const Utils = require("../../Utils/Utils");
 
 module.exports = {
   async processGame(home, visitor) {
     Utils.setup();
 
     homeFiltered = filterTeam(home.team, home.name);
+    homeFiltered.whereas = "casa";
     visitorFiltered = filterTeam(visitor.team, visitor.name);
+    visitorFiltered.whereas = "visitante";
 
-    gameStatus.push(
-      {
-        name: home.name,
-        attemptsToGoal: [],
-        passes: [],
-        cards: [],
-        fouls: [],
-      },
-      {
-        name: visitor.name,
-        attemptsToGoal: [],
-        passes: [],
-        cards: [],
-        fouls: [],
-      }
-    );
+    gameStatus.casa = {
+      name: home.name,
+      attemptsToGoal: [],
+      passes: [],
+      cards: [],
+      fouls: [],
+      possesion: 0,
+    };
+    gameStatus.visitante = {
+      name: visitor.name,
+      attemptsToGoal: [],
+      passes: [],
+      cards: [],
+      fouls: [],
+      possesion: 0,
+    };
 
     totalEvents[home.name] = 0;
     totalEvents[visitor.name] = 0;
@@ -66,7 +69,7 @@ module.exports = {
         if (nextMove) {
           nextMove.half = t;
           nextMove.score = totalScore;
-          nextMove.gameStatus = gameStatus;
+          //nextMove.gameStatus = gameStatus;
           let auxString = JSON.stringify(nextMove);
           finalArray.push(JSON.parse(auxString));
         }
@@ -81,8 +84,6 @@ module.exports = {
       possesion[visitor.name] = `${Math.round(
         (totalEvents[visitor.name] / totalEventsSum) * 100
       )}%`;
-
-      gameStatus.push(possesion);
 
       console.log("gameStatus: ", gameStatus);
 
@@ -145,7 +146,7 @@ async function defineNextMove(time) {
   totalEvents[currentTeam.name]++;
 
   if (actionRandom < 20 + lucky) {
-    //Ação solta
+    //A��o solta
     return;
   } else if (actionRandom < 40 + lucky) {
     //Tentando o passe na mesma linha
@@ -186,7 +187,7 @@ async function defineNextMove(time) {
       }
       return msg;
     } else {
-      //Só passa
+      //S� passa
       return await MessageController.generateMessage(
         "pass",
         passData.oldPlayer,
@@ -268,14 +269,14 @@ function fouled(time) {
     }
   }
 
-  if (auxTeam.card) {
+  /*if (auxTeam.card) {
     gameStatus
       .find((el) => el.name == auxTeam.name)
       .fouls.push({
         card: auxTeam.card,
         time: time,
       });
-  }
+  }*/
 
   return {
     oldPlayer: currentPlayer.name,
